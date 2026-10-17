@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - data:/data
+    # noVNC only on the VPS loopback: reach it through `ssh -L 6080:127.0.0.1:6080 <vps>`.
+    ports:
+      - "127.0.0.1:6080:6080"
+    shm_size: 1gb
+
+volumes:
+  data:

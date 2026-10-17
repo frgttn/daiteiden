@@ -150,3 +150,7 @@ vite.config.ts.timestamp-*
 
 # Playwrite data
 .browser-profile/
+
+# Daiteiden
+!.env.example
+data/

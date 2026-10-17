@@ -1,0 +1,20 @@
+{
+  "name": "daiteiden",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "bot",
+    "power",
+    "outage"
+  ],
+  "license": "GPL-3.0-only",
+  "author": "Vladyslav Hryhorenko",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "playwright": "^1.64.1"
+  }
+}

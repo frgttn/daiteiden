@@ -57,4 +57,6 @@ npm run typecheck
 npm start              # читає .env
 ```
 
+Схема бази: [src/db/schema.ts](src/db/schema.ts) (Drizzle поверх `node:sqlite`). Після зміни схеми виконайте `npm run db:generate`: міграції з `drizzle/` застосовуються автоматично під час запуску.
+
 Тести перевіряють розбір обох джерел (на справжніх відповідях з `test/fixtures`), вибір джерела, події, нагадування, тексти й увесь цикл опитування із SQLite у пам'яті. Telegram і Playwright тестами не покриті.

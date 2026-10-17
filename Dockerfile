@@ -9,6 +9,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npx playwright install --with-deps chromium && rm -rf /var/lib/apt/lists/*
 COPY src ./src
+COPY drizzle ./drizzle
 COPY docker-entrypoint.sh ./
 
 ENV DISPLAY=:99 DB_PATH=/data/daiteiden.db BROWSER_PROFILE=/data/browser-profile

@@ -9,15 +9,19 @@
   "scripts": {
     "test": "node --test 'test/**/*.test.ts'",
     "typecheck": "tsc",
-    "start": "node --env-file-if-exists=.env src/main.ts"
+    "start": "node --env-file-if-exists=.env src/main.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@grammyjs/auto-retry": "^2.0.2",
+    "drizzle-orm": "1.0.0-rc.4",
     "grammy": "^1.46.0",
     "playwright": "^1.64.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "drizzle-kit": "1.0.0-rc.4",
     "typescript": "^7.0.2"
   },
   "engines": {

@@ -1,106 +1,75 @@
-// SQLite persistence (node:sqlite). Small enough that an ORM would only add weight.
+// SQLite persistence: Drizzle over node:sqlite, migrations from ./drizzle applied on open.
 
-import { DatabaseSync } from 'node:sqlite';
+import { count, eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-sqlite';
+import { migrate } from 'drizzle-orm/node-sqlite/migrator';
 
 import type { SourceState } from './active-source.ts';
+import { meta, source, subscriber } from './db/schema.ts';
 import type { GroupDays, Snapshot, SourceName } from './schedule.ts';
 
-export type Subscriber = {
-  chatId: number;
-  group: string;
-  notify: boolean;
-  possible: boolean;
-  /** The Schedule this Subscriber was last told about. */
-  told: GroupDays;
-};
+const MIGRATIONS = new URL('../drizzle', import.meta.url).pathname;
 
-type SubscriberRow = { chat_id: number; grp: string; notify: number; possible: number; told: string };
-type SourceRow = { snapshot: string | null; last_ok_at: number | null; failing: number };
+export type Subscriber = Omit<typeof subscriber.$inferSelect, 'createdAt'>;
 
 export function openStore(path: string) {
-  const db = new DatabaseSync(path);
-  db.exec(`
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS subscriber (
-      chat_id INTEGER PRIMARY KEY,
-      grp TEXT NOT NULL,
-      notify INTEGER NOT NULL DEFAULT 1,
-      possible INTEGER NOT NULL DEFAULT 1,
-      told TEXT NOT NULL DEFAULT '{}',
-      created_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS source (
-      name TEXT PRIMARY KEY,
-      snapshot TEXT,
-      last_ok_at INTEGER,
-      failing INTEGER NOT NULL DEFAULT 0
-    );
-    CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-  `);
+  const db = drizzle(path);
+  db.$client.exec('PRAGMA journal_mode = WAL');
+  migrate(db, { migrationsFolder: MIGRATIONS });
 
-  const toSubscriber = (row: SubscriberRow): Subscriber => ({
-    chatId: row.chat_id, group: row.grp, notify: !!row.notify, possible: !!row.possible, told: JSON.parse(row.told),
-  });
+  const toSubscriber = ({ createdAt: _, ...row }: typeof subscriber.$inferSelect): Subscriber => row;
 
   return {
     subscribers(): Subscriber[] {
-      return (db.prepare('SELECT * FROM subscriber').all() as SubscriberRow[]).map(toSubscriber);
+      return db.select().from(subscriber).all().map(toSubscriber);
     },
     subscriber(chatId: number): Subscriber | undefined {
-      const row = db.prepare('SELECT * FROM subscriber WHERE chat_id = ?').get(chatId) as SubscriberRow | undefined;
+      const row = db.select().from(subscriber).where(eq(subscriber.chatId, chatId)).get();
       return row && toSubscriber(row);
     },
     upsertSubscriber(chatId: number, group: string, told: GroupDays, now: number) {
-      db.prepare(`
-        INSERT INTO subscriber (chat_id, grp, told, created_at) VALUES (?, ?, ?, ?)
-        ON CONFLICT (chat_id) DO UPDATE SET grp = excluded.grp, told = excluded.told
-      `).run(chatId, group, JSON.stringify(told), now);
+      db.insert(subscriber)
+        .values({ chatId, group, told, createdAt: now })
+        .onConflictDoUpdate({ target: subscriber.chatId, set: { group, told } })
+        .run();
     },
     setNotify(chatId: number, notify: boolean, told: GroupDays) {
-      db.prepare('UPDATE subscriber SET notify = ?, told = ? WHERE chat_id = ?').run(notify ? 1 : 0, JSON.stringify(told), chatId);
+      db.update(subscriber).set({ notify, told }).where(eq(subscriber.chatId, chatId)).run();
     },
     setPossible(chatId: number, possible: boolean) {
-      db.prepare('UPDATE subscriber SET possible = ? WHERE chat_id = ?').run(possible ? 1 : 0, chatId);
+      db.update(subscriber).set({ possible }).where(eq(subscriber.chatId, chatId)).run();
     },
     setTold(chatId: number, told: GroupDays) {
-      db.prepare('UPDATE subscriber SET told = ? WHERE chat_id = ?').run(JSON.stringify(told), chatId);
+      db.update(subscriber).set({ told }).where(eq(subscriber.chatId, chatId)).run();
     },
     removeSubscriber(chatId: number) {
-      db.prepare('DELETE FROM subscriber WHERE chat_id = ?').run(chatId);
+      db.delete(subscriber).where(eq(subscriber.chatId, chatId)).run();
     },
     countSubscribers(): number {
-      return (db.prepare('SELECT count(*) AS n FROM subscriber').get() as { n: number }).n;
+      return db.select({ n: count() }).from(subscriber).get()!.n;
     },
 
     source(name: SourceName): SourceState & { failing: boolean } {
-      const row = db.prepare('SELECT snapshot, last_ok_at, failing FROM source WHERE name = ?').get(name) as SourceRow | undefined;
-      return {
-        snapshot: row?.snapshot ? (JSON.parse(row.snapshot) as Snapshot) : undefined,
-        lastOkAt: row?.last_ok_at ?? undefined,
-        failing: !!row?.failing,
-      };
+      const row = db.select().from(source).where(eq(source.name, name)).get();
+      return { snapshot: row?.snapshot ?? undefined, lastOkAt: row?.lastOkAt ?? undefined, failing: !!row?.failing };
     },
     sourceOk(name: SourceName, snapshot: Snapshot, now: number) {
-      db.prepare(`
-        INSERT INTO source (name, snapshot, last_ok_at, failing) VALUES (?, ?, ?, 0)
-        ON CONFLICT (name) DO UPDATE SET snapshot = excluded.snapshot, last_ok_at = excluded.last_ok_at, failing = 0
-      `).run(name, JSON.stringify(snapshot), now);
+      const set = { snapshot, lastOkAt: now, failing: false };
+      db.insert(source).values({ name, ...set }).onConflictDoUpdate({ target: source.name, set }).run();
     },
     sourceFailed(name: SourceName) {
-      db.prepare(`
-        INSERT INTO source (name, failing) VALUES (?, 1) ON CONFLICT (name) DO UPDATE SET failing = 1
-      `).run(name);
+      db.insert(source).values({ name, failing: true }).onConflictDoUpdate({ target: source.name, set: { failing: true } }).run();
     },
 
     meta(key: string): string | undefined {
-      return (db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as { value: string } | undefined)?.value;
+      return db.select().from(meta).where(eq(meta.key, key)).get()?.value;
     },
     setMeta(key: string, value: string) {
-      db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value').run(key, value);
+      db.insert(meta).values({ key, value }).onConflictDoUpdate({ target: meta.key, set: { value } }).run();
     },
 
     close() {
-      db.close();
+      db.$client.close();
     },
   };
 }

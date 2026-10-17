@@ -1,0 +1,170 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "id": "c1adc798-5030-4b2f-821a-5cf182a09ac1",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "ddl": [
+    {
+      "name": "meta",
+      "entityType": "tables"
+    },
+    {
+      "name": "source",
+      "entityType": "tables"
+    },
+    {
+      "name": "subscriber",
+      "entityType": "tables"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "key",
+      "entityType": "columns",
+      "table": "meta"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "value",
+      "entityType": "columns",
+      "table": "meta"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "source"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "snapshot",
+      "entityType": "columns",
+      "table": "source"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "last_ok_at",
+      "entityType": "columns",
+      "table": "source"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "failing",
+      "entityType": "columns",
+      "table": "source"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "chat_id",
+      "entityType": "columns",
+      "table": "subscriber"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "grp",
+      "entityType": "columns",
+      "table": "subscriber"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "true",
+      "generated": null,
+      "name": "notify",
+      "entityType": "columns",
+      "table": "subscriber"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "true",
+      "generated": null,
+      "name": "possible",
+      "entityType": "columns",
+      "table": "subscriber"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'{}'",
+      "generated": null,
+      "name": "told",
+      "entityType": "columns",
+      "table": "subscriber"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "subscriber"
+    },
+    {
+      "columns": [
+        "key"
+      ],
+      "nameExplicit": false,
+      "name": "meta_pk",
+      "table": "meta",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "name"
+      ],
+      "nameExplicit": false,
+      "name": "source_pk",
+      "table": "source",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "chat_id"
+      ],
+      "nameExplicit": false,
+      "name": "subscriber_pk",
+      "table": "subscriber",
+      "entityType": "pks"
+    }
+  ],
+  "renames": []
+}

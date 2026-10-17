@@ -12,9 +12,32 @@ const FIND_GROUP_URL = 'https://www.dtek-dnem.com.ua/ua/shutdowns';
 const OPTIONS = { parse_mode: 'HTML', link_preview_options: { is_disabled: true } } as const;
 
 const COMMANDS = [
+  { command: 'start', description: 'Почати й обрати чергу' },
   { command: 'status', description: 'Що зараз за графіком' },
   { command: 'schedule', description: 'Графік на сьогодні й завтра' },
   { command: 'settings', description: 'Черга й сповіщення' },
+];
+
+// Shown in an empty chat before "Start" (up to 512 characters).
+const DESCRIPTION = [
+  'Повідомляю про планові відключення світла в Дніпрі за графіками DTEK.',
+  '',
+  '• Коли опублікують графік на завтра',
+  '• Коли графік зміниться, навіть уночі, з порівнянням «було → стало»',
+  '• За 30 хвилин до відключення та до повернення світла',
+  '• Окремо про можливі відключення (можна вимкнути)',
+  '',
+  'Оберіть свою чергу, і я писатиму лише тоді, коли це важливо.',
+].join('\n');
+
+// Profile and link previews (up to 120 characters).
+const SHORT_DESCRIPTION = 'Графік відключень світла в Дніпрі: зміни, публікації та нагадування за 30 хвилин для вашої черги.';
+
+// Shown only in the Admin's chat.
+const ADMIN_COMMANDS = [
+  ...COMMANDS,
+  { command: 'admin', description: 'Стан джерел і кількість підписників' },
+  { command: 'captcha', description: 'Відкрити DTEK для проходження перевірки' },
 ];
 
 export type BotDeps = {
@@ -126,6 +149,9 @@ export function createBot({ token, app, adminChatId, startCaptchaSession }: BotD
     bot,
     async start() {
       await bot.api.setMyCommands(COMMANDS);
+      await bot.api.setMyCommands(ADMIN_COMMANDS, { scope: { type: 'chat', chat_id: adminChatId } });
+      await bot.api.setMyDescription(DESCRIPTION);
+      await bot.api.setMyShortDescription(SHORT_DESCRIPTION);
       void bot.start({ drop_pending_updates: true });
     },
     async send(chatId: number, text: string) {

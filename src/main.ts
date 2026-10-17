@@ -20,8 +20,10 @@ const token = env('TELEGRAM_BOT_TOKEN');
 const adminChatId = Number(env('ADMIN_CHAT_ID'));
 const dbPath = env('DB_PATH', 'data/daiteiden.db');
 const profileDir = env('BROWSER_PROFILE', '.browser-profile');
-// Under Xvfb (Docker) the browser always runs headful, so the Admin can see it in noVNC.
-const headful = !!process.env.DISPLAY;
+// In Docker the browser polls headful under Xvfb, so the Admin can watch it in noVNC.
+// On a desktop it polls headless; /captcha still opens a visible window there.
+const headful = process.env.BROWSER_HEADFUL === '1';
+const hasDisplay = !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
 const captchaHint = process.env.CAPTCHA_HINT;
 
 mkdirSync(dirname(dbPath), { recursive: true });
@@ -56,7 +58,7 @@ telegram = createBot({
   adminChatId,
   async startCaptchaSession() {
     if (captchaSession) return 'Сесія вже відкрита.';
-    if (!headful) return 'Немає дисплея (DISPLAY): запустіть бота в Docker з noVNC.';
+    if (!hasDisplay) return 'Немає дисплея (DISPLAY): запустіть бота в Docker з noVNC.';
     captchaSession = fetchDtekFact({ profileDir, headful: true, timeout: 10 * 60_000 });
     try {
       await captchaSession;

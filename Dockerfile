@@ -12,7 +12,7 @@ COPY src ./src
 COPY drizzle ./drizzle
 COPY docker-entrypoint.sh ./
 
-ENV DISPLAY=:99 DB_PATH=/data/daiteiden.db BROWSER_PROFILE=/data/browser-profile
+ENV DISPLAY=:99 BROWSER_HEADFUL=1 DB_PATH=/data/daiteiden.db BROWSER_PROFILE=/data/browser-profile
 VOLUME /data
 EXPOSE 6080
 ENTRYPOINT ["tini", "--", "./docker-entrypoint.sh"]

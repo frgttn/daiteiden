@@ -17,8 +17,6 @@ export type AppDeps = {
   fetchers: Fetchers;
   send: (chatId: number, text: string) => Promise<void>;
   alertAdmin: (text: string) => Promise<void>;
-  /** Appended to the alert when DTEK stops answering, e.g. how to reach noVNC. */
-  captchaHint?: string;
 };
 
 export function createApp(deps: AppDeps) {
@@ -52,8 +50,7 @@ export function createApp(deps: AppDeps) {
     } catch (error) {
       store.sourceFailed(name);
       if (!before.failing) {
-        const hint = name === 'dtek' && deps.captchaHint ? `\n\n${deps.captchaHint}` : '';
-        await deps.alertAdmin(`⚠️ ${SOURCE_TITLE[name]} не відповідає: ${(error as Error).message}${hint}`);
+        await deps.alertAdmin(`⚠️ ${SOURCE_TITLE[name]} не відповідає: ${(error as Error).message}`);
       }
     }
   }

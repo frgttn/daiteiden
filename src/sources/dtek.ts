@@ -3,8 +3,9 @@
 // The site has no separate JSON API for the table: the schedule is embedded in the
 // page HTML as `DisconSchedule.fact = {...}` and drawn by their JS. The page sits
 // behind Imperva (Incapsula), so plain fetch/curl gets a stub page — we use a real
-// browser with a persistent profile so the anti-bot cookies survive between runs.
-// If Imperva shows a captcha, the Admin solves it by hand in that browser.
+// headless browser that runs Imperva's JS check, with a persistent profile so the
+// anti-bot cookies survive between runs. If Imperva ever asks for a human check,
+// the fetch times out and the bot falls back to Yasno (docs/adr/0001).
 
 import { chromium } from 'playwright';
 
@@ -31,10 +32,8 @@ export type DtekFact = {
 };
 
 /** Loads the page in a browser and returns the raw `DisconSchedule.fact`. */
-export async function fetchDtekFact({ profileDir, headful = false, timeout = headful ? 180_000 : 30_000 }: {
-  profileDir: string; headful?: boolean; timeout?: number;
-}): Promise<DtekFact> {
-  const ctx = await chromium.launchPersistentContext(profileDir, { headless: !headful, locale: 'uk-UA' });
+export async function fetchDtekFact({ profileDir, timeout = 30_000 }: { profileDir: string; timeout?: number }): Promise<DtekFact> {
+  const ctx = await chromium.launchPersistentContext(profileDir, { headless: true, locale: 'uk-UA' });
   try {
     const page = ctx.pages()[0] ?? (await ctx.newPage());
     await page.goto(PAGE_URL, { waitUntil: 'domcontentloaded' });

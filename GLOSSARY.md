@@ -61,7 +61,7 @@ A Telegram user who has chosen exactly one Group.
 _Avoid_: user, account, client
 
 **Admin**:
-The bot's operator, who receives alerts about Sources and solves captchas.
+The bot's operator, who receives alerts about Sources and chooses the Preferred Source.
 
 **Publication**:
 The moment a Schedule for tomorrow first appears.

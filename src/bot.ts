@@ -37,15 +37,12 @@ const SHORT_DESCRIPTION = 'Графік відключень світла в Д�
 const ADMIN_COMMANDS = [
   ...COMMANDS,
   { command: 'admin', description: 'Стан джерел і кількість підписників' },
-  { command: 'captcha', description: 'Відкрити DTEK для проходження перевірки' },
 ];
 
 export type BotDeps = {
   token: string;
   app: App;
   adminChatId: number;
-  /** Opens DTEK in a visible browser for the Admin to pass the captcha via noVNC. */
-  startCaptchaSession: () => Promise<string>;
 };
 
 function groupKeyboard() {
@@ -57,7 +54,7 @@ function groupKeyboard() {
   return keyboard.url('Дізнатися свою чергу', FIND_GROUP_URL);
 }
 
-export function createBot({ token, app, adminChatId, startCaptchaSession }: BotDeps) {
+export function createBot({ token, app, adminChatId }: BotDeps) {
   const bot = new Bot(token);
   bot.api.config.use(autoRetry());
 
@@ -148,15 +145,6 @@ export function createBot({ token, app, adminChatId, startCaptchaSession }: BotD
     app.setPreference(source);
     await ctx.answerCallbackQuery(`Пріоритет: ${source === 'dtek' ? 'DTEK' : 'Yasno'}`);
     await ctx.editMessageText(app.adminStatus(Date.now()), { reply_markup: adminKeyboard() });
-  });
-
-  bot.command('captcha', async (ctx) => {
-    if (ctx.chat.id !== adminChatId) return;
-    await ctx.reply('Відкриваю сайт DTEK у браузері сервера. Пройдіть перевірку через noVNC, у вас 10 хвилин.');
-    // Not awaited: grammY handles updates one by one, and this can take minutes.
-    startCaptchaSession()
-      .then((result) => ctx.reply(result))
-      .catch((error) => ctx.reply(`Не вдалося: ${(error as Error).message}`));
   });
 
   bot.catch((error) => console.error('Bot error:', error.error));

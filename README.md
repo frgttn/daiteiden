@@ -1,4 +1,4 @@
-# Дайте світло
+# Daiteiden
 
 Telegram-бот про планові відключення світла в Дніпрі. Наступник [Switchlight](https://github.com/frgttn/switchlight): замість щогодинної розсилки надсилає лише те, що важливо:
 

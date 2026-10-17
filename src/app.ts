@@ -2,7 +2,7 @@
 
 import { chooseSchedule, type Choice } from './active-source.ts';
 import { detectEvents } from './events.ts';
-import { renderEvent, renderReminder } from './messages.ts';
+import { renderEvent, renderReminder, renderSource, SOURCE_TITLE } from './messages.ts';
 import { dueReminders, REMINDER_LEAD_MS } from './reminders.ts';
 import { kyivDate, type GroupDays, type Snapshot, type SourceName } from './schedule.ts';
 import { openStore, type Subscriber } from './store.ts';
@@ -21,12 +21,14 @@ export type AppDeps = {
   captchaHint?: string;
 };
 
-const SOURCE_TITLE: Record<SourceName, string> = { dtek: 'DTEK', yasno: 'Yasno' };
-
 export function createApp(deps: AppDeps) {
   const store = openStore(deps.dbPath);
 
-  const choice = (now: number) => chooseSchedule({ dtek: store.source('dtek'), yasno: store.source('yasno') }, now);
+  /** Which Source the Admin trusts first; the other one is the fallback. */
+  const preference = (): SourceName => (store.meta('source_preference') === 'yasno' ? 'yasno' : 'dtek');
+
+  const choice = (now: number) =>
+    chooseSchedule({ dtek: store.source('dtek'), yasno: store.source('yasno') }, now, preference());
 
   const groupDays = (snapshot: Snapshot | undefined, group: string): GroupDays => {
     const out: GroupDays = {};
@@ -70,11 +72,7 @@ export function createApp(deps: AppDeps) {
     }
   }
 
-  function sourceNote(chosen: Choice) {
-    if (chosen.stale) return '\n\n⚠️ Дані можуть бути застарілими: джерела графіків зараз не відповідають.';
-    if (chosen.snapshot.source === 'yasno') return '\n\nℹ️ За даними Yasno, можливі неточності: сайт DTEK зараз недоступний.';
-    return '';
-  }
+  const sourceNote = (chosen: Choice) => `\n\n${renderSource(chosen, preference())}`;
 
   async function notify(subscriber: Subscriber, chosen: Choice, from: number, now: number) {
     const current = groupDays(chosen.snapshot, subscriber.group);
@@ -123,13 +121,19 @@ export function createApp(deps: AppDeps) {
       if (subscriber) store.setNotify(chatId, on, groupDays(choice(now)?.snapshot, subscriber.group));
     },
 
+    preference,
+
+    setPreference(source: SourceName) {
+      store.setMeta('source_preference', source);
+    },
+
     setPossible(chatId: number, on: boolean) {
       store.setPossible(chatId, on);
     },
 
     subscriber: (chatId: number) => store.subscriber(chatId),
 
-    /** The Active Source's Schedule for a Group, with a note when it is not from fresh DTEK. */
+    /** The Active Source's Schedule for a Group, with the source line for the message. */
     schedule(group: string, now: number) {
       const chosen = choice(now);
       return chosen ? { days: groupDays(chosen.snapshot, group), note: sourceNote(chosen) } : null;
@@ -143,6 +147,7 @@ export function createApp(deps: AppDeps) {
       };
       const chosen = choice(now);
       return [
+        `Пріоритет: ${SOURCE_TITLE[preference()]}`,
         `Активне джерело: ${chosen ? SOURCE_TITLE[chosen.snapshot.source] + (chosen.stale ? ' (застаріле)' : '') : 'немає'}`,
         line('dtek'),
         line('yasno'),

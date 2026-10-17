@@ -1,13 +1,16 @@
 // Ukrainian message texts (Telegram HTML).
 
+import type { Choice } from './active-source.ts';
 import type { Event } from './events.ts';
 import { dueReminders, REMINDER_LEAD_MS, type Reminder } from './reminders.ts';
-import { fromKyiv, kyivDate, TIME_ZONE, toRuns, type GroupDay, type GroupDays, type PowerState } from './schedule.ts';
+import { fromKyiv, kyivDate, TIME_ZONE, toRuns, type GroupDay, type GroupDays, type PowerState, type SourceName } from './schedule.ts';
 
 const clock = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const dayMonth = new Intl.DateTimeFormat('uk-UA', { timeZone: TIME_ZONE, day: 'numeric', month: 'long' });
 
 const time = (ms: number) => clock.format(ms);
+
+export const SOURCE_TITLE: Record<SourceName, string> = { dtek: 'DTEK', yasno: 'Yasno' };
 
 const noon = (date: string) => {
   const [y, m, d] = date.split('-').map(Number);
@@ -139,4 +142,13 @@ export function renderStatus(days: GroupDays, now: number) {
   return next
     ? `🟢 Зараз світло має бути. Наступне відключення о ${time(next.start)}, через ${formatDuration(next.start - now)}.`
     : '🟢 Зараз світло має бути. Відключень далі в графіку немає.';
+}
+
+/** Last line of every message: where the Schedule came from. */
+export function renderSource(chosen: Choice, preferred: SourceName) {
+  const source = chosen.snapshot.source;
+  const line = source === preferred
+    ? `<i>Джерело: ${SOURCE_TITLE[source]}</i>`
+    : `<i>Джерело: ${SOURCE_TITLE[source]}, бо ${SOURCE_TITLE[preferred]} не відповідає</i>`;
+  return chosen.stale ? `${line}\n⚠️ Дані можуть бути застарілими: джерела графіків зараз не відповідають.` : line;
 }

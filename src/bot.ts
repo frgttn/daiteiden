@@ -129,9 +129,25 @@ export function createBot({ token, app, adminChatId, startCaptchaSession }: BotD
     await ctx.editMessageReplyMarkup({ reply_markup: settingsKeyboard(chatId) });
   });
 
+  const adminKeyboard = () => {
+    const mark = (source: 'dtek' | 'yasno') => (app.preference() === source ? '✓ ' : '');
+    return new InlineKeyboard()
+      .text(`${mark('dtek')}Пріоритет DTEK`, 'admin:prefer:dtek')
+      .text(`${mark('yasno')}Пріоритет Yasno`, 'admin:prefer:yasno');
+  };
+
   bot.command('admin', (ctx) => {
     if (ctx.chat.id !== adminChatId) return;
-    return ctx.reply(app.adminStatus(Date.now()));
+    return ctx.reply(app.adminStatus(Date.now()), { reply_markup: adminKeyboard() });
+  });
+
+  bot.callbackQuery(/^admin:prefer:(dtek|yasno)$/, async (ctx) => {
+    if (ctx.chat?.id !== adminChatId) return ctx.answerCallbackQuery();
+    const source = ctx.match[1] as 'dtek' | 'yasno';
+    if (app.preference() === source) return ctx.answerCallbackQuery('Вже обрано');
+    app.setPreference(source);
+    await ctx.answerCallbackQuery(`Пріоритет: ${source === 'dtek' ? 'DTEK' : 'Yasno'}`);
+    await ctx.editMessageText(app.adminStatus(Date.now()), { reply_markup: adminKeyboard() });
   });
 
   bot.command('captcha', async (ctx) => {

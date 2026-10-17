@@ -1,0 +1,3 @@
+# The Admin chooses the Preferred Source
+
+ADR 0001 fixed DTEK as the primary Source. In practice either Source can be the better one for a while: DTEK can stay blocked by Imperva, Yasno can lag or break. So the Admin can switch the Preferred Source between DTEK (the default) and Yasno with a button in `/admin`, for all Subscribers at once. The rules from ADR 0001 apply the same way in both directions: the Preferred Source is used while it is fresh (under 30 minutes); after that the other Source is used only if its data is newer, otherwise the Stale Schedule is kept. Every message names the Source it came from.

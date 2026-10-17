@@ -55,7 +55,7 @@ test('a Reminder is sent once, on the first tick at or after its time', async ()
   assert.equal(w.sent.length, 0);
   await w.app.tick(k('2026-10-17', '16:31'));
   await w.app.tick(k('2026-10-17', '16:36'));
-  assert.deepEqual(w.sent.map((m) => m.text), ['🔴 О 17:00 відключення, до 19:00.']);
+  assert.deepEqual(w.sent.map((m) => m.text), ['🔴 О 17:00 відключення, до 19:00.\n\n<i>Джерело: DTEK</i>']);
 });
 
 test('a Subscriber who blocked the bot is removed', async () => {
@@ -108,4 +108,23 @@ test('a Subscriber with notifications off gets nothing', async () => {
   w.set('dtek', k('2026-10-17', '11:00'), { '2026-10-17': { '3.2': day('.'.repeat(40) + 'XX') } });
   await w.app.tick(k('2026-10-17', '11:05'));
   assert.deepEqual(w.sent, []);
+});
+
+test('the Admin prefers Yasno: its change is sent even though DTEK is fresh, and the switch is alerted', async () => {
+  const w = world();
+  w.set('dtek', k('2026-10-17', '10:00'), { '2026-10-17': { '3.2': day('') } });
+  w.set('yasno', k('2026-10-17', '10:00'), { '2026-10-17': { '3.2': day('') } });
+  await w.app.tick(k('2026-10-17', '10:05'));
+  await w.app.subscribe(1, '3.2', k('2026-10-17', '10:06'));
+  w.set('yasno', k('2026-10-17', '10:30'), { '2026-10-17': { '3.2': day('.'.repeat(40) + 'XX') } });
+  await w.app.tick(k('2026-10-17', '10:35'));
+  assert.equal(w.sent.length, 0);
+
+  w.app.setPreference('yasno');
+  await w.app.tick(k('2026-10-17', '10:40'));
+  assert.equal(w.app.preference(), 'yasno');
+  assert.equal(w.sent.length, 1);
+  assert.match(w.sent[0].text, /^<b>Зміна графіка на сьогодні<\/b>/);
+  assert.match(w.sent[0].text, /<i>Джерело: Yasno<\/i>$/);
+  assert.ok(w.alerts.includes('ℹ️ Графіки тепер беруться з Yasno.'));
 });

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { renderEvent, renderReminder, renderSchedule, renderStatus } from '../src/messages.ts';
-import type { PowerState } from '../src/schedule.ts';
+import { renderEvent, renderReminder, renderSchedule, renderSource, renderStatus } from '../src/messages.ts';
+import type { PowerState, Snapshot, SourceName } from '../src/schedule.ts';
 
 const day = (drawing: string): PowerState[] =>
   drawing.padEnd(48, '.').split('').map((c) => ({ '.': 'on', X: 'off', '?': 'possible' })[c] as PowerState);
@@ -82,4 +82,16 @@ test('status now: during an Outage and with power', () => {
   assert.equal(renderStatus(days, k('2026-10-17', '12:00')), '🟢 Зараз світло має бути. Наступне відключення о 17:00, через 5 год.');
   assert.equal(renderStatus(days, k('2026-10-17', '21:00')), '🟢 Зараз світло має бути. Відключень далі в графіку немає.');
   assert.equal(renderStatus({}, k('2026-10-17', '21:00')), 'Графіка на сьогодні немає.');
+});
+
+const snap = (source: SourceName): Snapshot => ({ source, updatedAt: 0, days: {} });
+
+test('source line: the preferred Source, the other one as a fallback, and a Stale Schedule', () => {
+  assert.equal(renderSource({ snapshot: snap('dtek'), stale: false }, 'dtek'), '<i>Джерело: DTEK</i>');
+  assert.equal(renderSource({ snapshot: snap('yasno'), stale: false }, 'yasno'), '<i>Джерело: Yasno</i>');
+  assert.equal(renderSource({ snapshot: snap('yasno'), stale: false }, 'dtek'), '<i>Джерело: Yasno, бо DTEK не відповідає</i>');
+  assert.equal(
+    renderSource({ snapshot: snap('dtek'), stale: true }, 'dtek'),
+    '<i>Джерело: DTEK</i>\n⚠️ Дані можуть бути застарілими: джерела графіків зараз не відповідають.',
+  );
 });

@@ -44,3 +44,27 @@ test('both Sources silent: the chosen Schedule is stale', () => {
 test('nothing fetched yet: no Schedule', () => {
   assert.equal(chooseSchedule({ dtek: {}, yasno: {} }, now), null);
 });
+
+test('Yasno preferred: fresh Yasno wins even when DTEK has a newer update', () => {
+  const choice = chooseSchedule({
+    dtek: { snapshot: snap('dtek', now - 1 * MIN), lastOkAt: now - 1 * MIN },
+    yasno: { snapshot: snap('yasno', now - 60 * MIN), lastOkAt: now - 5 * MIN },
+  }, now, 'yasno');
+  assert.deepEqual(choice, { snapshot: snap('yasno', now - 60 * MIN), stale: false });
+});
+
+test('Yasno preferred but silent: newer DTEK becomes the Active Source', () => {
+  const choice = chooseSchedule({
+    dtek: { snapshot: snap('dtek', now - 10 * MIN), lastOkAt: now - 2 * MIN },
+    yasno: { snapshot: snap('yasno', now - 120 * MIN), lastOkAt: now - 31 * MIN },
+  }, now, 'yasno');
+  assert.deepEqual(choice, { snapshot: snap('dtek', now - 10 * MIN), stale: false });
+});
+
+test('Yasno preferred but silent, DTEK older: keep Yasno as a Stale Schedule', () => {
+  const choice = chooseSchedule({
+    dtek: { snapshot: snap('dtek', now - 8 * 60 * MIN), lastOkAt: now - 2 * MIN },
+    yasno: { snapshot: snap('yasno', now - 60 * MIN), lastOkAt: now - 45 * MIN },
+  }, now, 'yasno');
+  assert.deepEqual(choice, { snapshot: snap('yasno', now - 60 * MIN), stale: true });
+});

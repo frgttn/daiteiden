@@ -39,16 +39,20 @@ A provider of Schedules for a region's grid operator.
 _Avoid_: API, provider
 
 **DTEK**:
-The Primary Source: the grid operator's own website, which publishes changes first, including at night.
+The grid operator's own website, which publishes changes first, including at night. The default Preferred Source.
 
 **Yasno**:
-The Fallback Source: the supplier's public API, which lags DTEK and sometimes misses night changes.
+The supplier's public API, which lags DTEK and sometimes misses night changes.
+
+**Preferred Source**:
+The Source the Admin chose to trust first, for all Subscribers; the other one is the fallback.
+_Avoid_: primary source, priority
 
 **Active Source**:
-The Source whose Schedules the bot currently trusts: DTEK while it is fresh, Yasno otherwise.
+The Source whose Schedules the bot currently trusts: the Preferred Source while it is fresh, otherwise the other one if it has newer data.
 
 **Stale Schedule**:
-The last DTEK Schedule, kept while Yasno is the Active Source but has nothing newer; shown with a warning.
+The last Schedule of a Source that is no longer fresh, kept because the other Source has nothing newer; shown with a warning.
 
 ## Notifications
 

@@ -1,5 +1,7 @@
 # DTEK website is the primary source, Yasno API is the fallback
 
+See also [ADR 0002](0002-admin-chooses-preferred-source.md): the Admin can now make Yasno the Preferred Source.
+
 The earlier bot used only Yasno's public JSON API. Yasno publishes changes later than DTEK and sometimes skips night changes completely, for example a schedule changed at 02:00 that decides how people plan their morning. So we scrape DTEK's shutdowns page as the primary Source. It sits behind Imperva and has no JSON API, so it needs a real browser (Playwright) with a persistent profile, and from time to time a captcha solved by hand. Yasno is kept as the Fallback Source so the bot keeps working while DTEK is blocked.
 
 ## Consequences
